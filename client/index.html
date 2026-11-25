@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PolyArena - Low Poly FPS</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Join / Class Select Overlay -->
+    <div id="join-overlay" class="overlay-backdrop">
+      <div class="card join-card">
+        <div class="brand-header">
+          <span class="badge-lowpoly">LOW POLY FPS</span>
+          <h1>POLYARENA</h1>
+          <p class="subtitle">Arena modular dinamica · Recoil basado en habilidad · 4 Clases · 6 Modos</p>
+        </div>
+
+        <div class="form-row">
+          <label for="join-name">Nombre de Jugador</label>
+          <input id="join-name" type="text" maxlength="20" placeholder="Tu nick..." value="Jugador" />
+        </div>
+
+        <div class="form-row">
+          <label>Elige tu Clase</label>
+          <div id="join-class-grid" class="class-grid"></div>
+        </div>
+
+        <button id="join-btn" class="btn-primary btn-large">ENTRAR A LA ARENA</button>
+        <p class="hint-text">WASD Mover · Shift Correr · Space Saltar · C/Ctrl Slide · Click Der. Apuntar · E/Q Habilidades · X Racha · 1-6 Armas · ESC Ajustes</p>
+      </div>
+    </div>
+
+    <!-- In-Game HUD -->
+    <div id="hud" class="hidden">
+      <div id="smoke-vignette" class="fullscreen-fx hidden"></div>
+      <div id="damage-vignette" class="fullscreen-fx hidden"></div>
+      <div id="recon-layer" class="fullscreen-fx"></div>
+
+      <div id="sniper-scope" class="hidden">
+        <div class="scope-circle">
+          <div class="scope-line-h"></div>
+          <div class="scope-line-v"></div>
+          <div class="scope-dot"></div>
+        </div>
+      </div>
+
+      <div id="hud-top-bar">
+        <div class="top-chip" id="hud-mode">TDM</div>
+        <div class="score-pill alpha">ALPHA <span id="hud-score-a">0</span></div>
+        <div class="timer-pill" id="hud-timer">05:00</div>
+        <div class="score-pill bravo"><span id="hud-score-b">0</span> BRAVO</div>
+        <div class="top-chip" id="hud-ring">Anillo 3x3</div>
+        <div class="top-chip perf-chip" id="hud-perf">60 FPS · 0 DC</div>
+      </div>
+
+      <div id="hud-objective" class="objective-bar hidden"></div>
+      <div id="hud-phase-banner" class="phase-banner hidden"></div>
+      <div id="sector-alert" class="sector-alert hidden"></div>
+      <div id="streak-banner" class="streak-banner hidden"></div>
+      <div id="spectator-banner" class="spectator-banner hidden"></div>
+      <div id="killfeed" class="killfeed"></div>
+
+      <div id="hud-interact-bar" class="interact-bar hidden">
+        <span id="hud-interact-label">Interactuando...</span>
+        <div class="progress-track"><div id="hud-interact-fill" class="progress-fill"></div></div>
+      </div>
+
+      <div id="crosshair">
+        <div id="ch-top" class="ch-tick ch-v"></div>
+        <div id="ch-bottom" class="ch-tick ch-v"></div>
+        <div id="ch-left" class="ch-tick ch-h"></div>
+        <div id="ch-right" class="ch-tick ch-h"></div>
+        <div id="hitmarker" class="hitmarker hidden">✕</div>
+      </div>
+
+      <div id="hud-bottom-left" class="hud-corner-panel">
+        <div class="class-tag" id="hud-class-badge">ASALTO</div>
+        <div class="hp-row">
+          <span class="hp-value" id="hud-hp-text">100</span>
+          <div class="hp-track"><div id="hud-hp-bar" class="hp-fill"></div></div>
+        </div>
+        <div class="slide-row">
+          <span>SLIDE (C / CTRL) · SPRINT (SHIFT)</span>
+          <div class="mini-track"><div id="hud-slide-bar" class="mini-fill"></div></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-right" class="hud-corner-panel right">
+        <div id="hud-streak-box" class="streak-box">
+          <span>RACHA: <strong id="hud-streak-count">0</strong></span>
+          <span id="hud-streak-name" class="streak-pill">3 bajas: Radar</span>
+        </div>
+        <div class="abilities-row">
+          <div id="hud-ability-e" class="ability-box">
+            <span class="key-cap">E</span>
+            <span id="hud-ability-e-name" class="ab-name">Dash</span>
+            <span id="hud-ability-e-cd" class="ab-cd">LISTO</span>
+          </div>
+          <div id="hud-ability-q" class="ability-box">
+            <span class="key-cap">Q</span>
+            <span id="hud-ability-q-name" class="ab-name">Stim</span>
+            <span id="hud-ability-q-cd" class="ab-cd">LISTO</span>
+          </div>
+        </div>
+        <div class="weapon-row">
+          <span id="hud-weapon-name">Vanguard AR</span>
+          <span id="hud-ammo-text">30 / 30</span>
+        </div>
+        <div id="hud-weapon-slots" class="weapon-slots"></div>
+      </div>
+    </div>
+
+    <!-- Odd-Player Quick Vote Overlay -->
+    <div id="vote-overlay" class="vote-overlay hidden">
+      <div class="card vote-card">
+        <h2 id="vote-title">VOTACION RAPIDA (10s)</h2>
+        <p id="vote-subtitle">Jugador extra buscando equipo</p>
+        <div class="vote-timer-num" id="vote-timer">10s</div>
+        <div class="vote-buttons">
+          <button id="vote-btn-a" class="vote-btn alpha">[1] EQUIPO ALPHA</button>
+          <button id="vote-btn-b" class="vote-btn bravo">[2] EQUIPO BRAVO</button>
+        </div>
+        <div class="vote-bars">
+          <div class="vote-bar-wrap"><div id="vote-bar-a" class="vote-fill alpha"></div><span id="vote-count-a">0</span></div>
+          <div class="vote-bar-wrap"><div id="vote-bar-b" class="vote-fill bravo"></div><span id="vote-count-b">0</span></div>
+        </div>
+        <div id="vote-result" class="vote-result hidden"></div>
+      </div>
+    </div>
+
+    <!-- ESC Settings Menu -->
+    <div id="esc-menu" class="overlay-backdrop hidden">
+      <div class="card esc-card">
+        <div class="esc-header">
+          <h2>MENU & AJUSTES</h2>
+          <button id="esc-resume-btn" class="btn-primary">VOLVER AL JUEGO</button>
+        </div>
+
+        <div class="esc-columns">
+          <div class="esc-col">
+            <h3>Controles y Video</h3>
+            <div class="slider-row">
+              <label>Sensibilidad Mouse: <strong id="esc-sens-val">1.00</strong></label>
+              <input id="esc-sens" type="range" min="0.1" max="5.0" step="0.05" value="1.0" />
+            </div>
+            <div class="slider-row">
+              <label>Campo de Vision (FOV): <strong id="esc-fov-val">85</strong>°</label>
+              <input id="esc-fov" type="range" min="75" max="110" step="1" value="85" />
+            </div>
+            <div class="slider-row">
+              <label>Volumen Maestro: <strong id="esc-vol-val">70</strong>%</label>
+              <input id="esc-vol" type="range" min="0" max="100" step="5" value="70" />
+            </div>
+            <label class="check-row">
+              <input id="esc-inverty" type="checkbox" /> Invertir Eje Y
+            </label>
+            <div class="form-row">
+              <label for="esc-quality">Perfil Grafico</label>
+              <select id="esc-quality">
+                <option value="ultra">Ultra-Ligero (Max FPS)</option>
+                <option value="balanced" selected>Balanceado</option>
+                <option value="high">Alto (Sombras)</option>
+              </select>
+            </div>
+            <button id="esc-admin-btn" class="btn-secondary">PANEL DE ADMINISTRACION</button>
+          </div>
+
+          <div class="esc-col">
+            <h3>Cambiar Clase (Aplica en Respawn)</h3>
+            <div id="esc-class-grid" class="class-grid compact"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel" class="overlay-backdrop hidden">
+      <div class="card admin-card">
+        <div class="esc-header">
+          <h2>PANEL ADMIN <span id="admin-role-badge" class="badge-lowpoly">SIN ACCESO</span></h2>
+          <button id="admin-close-btn" class="btn-secondary">CERRAR</button>
+        </div>
+
+        <div id="admin-auth-box" class="admin-auth-box">
+          <p>Ingresa la contrasena maestra (`ADMIN_PASSWORD`) o una llave temporal delegada:</p>
+          <div class="inline-row">
+            <input id="admin-pass-input" type="password" placeholder="Contrasena o llave POLY-..." />
+            <button id="admin-auth-btn" class="btn-primary">AUTENTICAR</button>
+          </div>
+          <p id="admin-auth-error" class="error-text hidden"></p>
+        </div>
+
+        <div id="admin-content" class="hidden">
+          <div class="admin-tabs">
+            <button class="admin-tab-btn active" data-tab="match">Partida y Mapa</button>
+            <button class="admin-tab-btn" data-tab="modifiers">Modificadores Troll</button>
+            <button id="admin-tab-keys-btn" class="admin-tab-btn hidden" data-tab="keys">Llaves Temporales</button>
+          </div>
+
+          <div id="admin-tab-match" class="admin-tab-body">
+            <div class="admin-grid-2">
+              <div class="admin-box">
+                <h3>Modo de Juego y Reglas</h3>
+                <div class="form-row">
+                  <label>Modo Actual</label>
+                  <select id="adm-mode-select">
+                    <option value="tdm">Duelo por Equipos (TDM)</option>
+                    <option value="ffa">Todos contra Todos (FFA)</option>
+                    <option value="snd">Buscar y Destruir (S&D)</option>
+                    <option value="hardpoint">Punto Caliente (Hardpoint)</option>
+                    <option value="domination">Dominacion (A/B/C)</option>
+                    <option value="gungame">Juego de Armas (Gun Game)</option>
+                  </select>
+                </div>
+                <label class="check-row"><input id="adm-gg-teams" type="checkbox" /> Gun Game por Equipos</label>
+                <label class="check-row"><input id="adm-random-rot" type="checkbox" /> Rotacion Aleatoria entre partidas</label>
+                <div class="inline-row">
+                  <label>Puntos/Meta <input id="adm-score-limit" type="number" min="1" max="1000" value="50" /></label>
+                  <label>Rondas S&D <input id="adm-round-limit" type="number" min="1" max="25" value="7" /></label>
+                  <label>Minutos <input id="adm-duration-min" type="number" min="1" max="60" value="5" /></label>
+                </div>
+                <div class="inline-row">
+                  <button id="adm-apply-cfg-btn" class="btn-primary">Aplicar Modo/Reglas</button>
+                  <button id="adm-start-btn" class="btn-secondary">Iniciar</button>
+                  <button id="adm-pause-btn" class="btn-secondary">Pausar / Reanudar</button>
+                  <button id="adm-reset-btn" class="btn-secondary">Reiniciar</button>
+                </div>
+
+                <h3 style="margin-top: 12px;">Mapa Dinamico</h3>
+                <label class="check-row"><input id="adm-map-auto" type="checkbox" checked /> Evolucion Automatica Activa</label>
+                <div class="inline-row">
+                  <label>Velocidad Cambio:
+                    <select id="adm-map-speed">
+                      <option value="1">Normal (1x)</option>
+                      <option value="2">Rapido (2x)</option>
+                      <option value="4">Caos (4x)</option>
+                    </select>
+                  </label>
+                  <label>Nivel al clickear sector:
+                    <select id="adm-sector-level">
+                      <option value="0">0 - Campo Abierto</option>
+                      <option value="1">1 - Suburbio</option>
+                      <option value="2" selected>2 - Ciudad</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="admin-box">
+                <h3>Forzar Sectores (7x7 Cohesivo)</h3>
+                <div id="adm-sector-grid" class="sector-mini-grid"></div>
+                <h3 style="margin-top: 12px;">Jugadores Conectados</h3>
+                <div id="adm-players-list" class="admin-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="admin-tab-modifiers" class="admin-tab-body hidden">
+            <div class="admin-box">
+              <div class="slider-row">
+                <label>Velocidad de Movimiento: <strong id="adm-mod-speed-val">1.00</strong>x</label>
+                <input id="adm-mod-speed" type="range" min="0.3" max="3.0" step="0.1" value="1.0" />
+              </div>
+              <div class="slider-row">
+                <label>Tamano de Jugadores (Hitbox + Visual): <strong id="adm-mod-scale-val">1.00</strong>x</label>
+                <input id="adm-mod-scale" type="range" min="0.4" max="2.5" step="0.1" value="1.0" />
+              </div>
+              <div class="slider-row">
+                <label>Gravedad: <strong id="adm-mod-grav-val">1.00</strong>x</label>
+                <input id="adm-mod-grav" type="range" min="0.2" max="2.5" step="0.1" value="1.0" />
+              </div>
+              <div class="slider-row">
+                <label>Altura de Salto: <strong id="adm-mod-jump-val">1.00</strong>x</label>
+                <input id="adm-mod-jump" type="range" min="0.5" max="3.0" step="0.1" value="1.0" />
+              </div>
+              <label class="check-row"><input id="adm-mod-inf-ammo" type="checkbox" /> Municion Infinita (Sin Recargas)</label>
+              <button id="adm-mod-reset-btn" class="btn-secondary">Restablecer Valores Normales</button>
+            </div>
+          </div>
+
+          <div id="admin-tab-keys" class="admin-tab-body hidden">
+            <div class="admin-box">
+              <h3>Generar Llave Temporal Delegable</h3>
+              <div class="inline-row">
+                <select id="adm-key-mode">
+                  <option value="duration">Por Duracion (Minutos)</option>
+                  <option value="single_session">1 Sesion Unica</option>
+                </select>
+                <input id="adm-key-mins" type="number" min="1" max="1440" value="60" />
+                <button id="adm-create-key-btn" class="btn-primary">Generar Llave</button>
+              </div>
+              <div id="adm-keys-list" class="admin-list" style="margin-top: 10px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
